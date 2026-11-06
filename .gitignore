@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Hexo generated output and cache
+/public/
+/db.json
+/.deploy_git/
+
+# Build output
+dist/
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+
+# Logs and editor files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
