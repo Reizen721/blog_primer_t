@@ -13,7 +13,7 @@ export const staticBlogs = [
     {
         id: "kaggle-portfolio-2026",
         category_id: 1,
-        title: "Kaggle 经典竞赛通关实录：从文本、高维表格到复杂多表时序预测的前排方案全解",
+        title: "Kaggle学习记录",
         create_time: 1731911400000, // 2026-11-18
         previewContent: "系统梳理在 Kaggle 官方平台上独立完成的 4 项经典竞赛（Disaster Tweets、House Prices、Spaceship Titanic、Store Sales）的建模架构、高阶特征工程创新与 Leaderboard 官方评测成果，附公开在线交互式 Notebook 与开源工程代码仓库。",
         content: `

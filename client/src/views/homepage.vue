@@ -20,8 +20,7 @@
                 <img src="./circulateBanner/banner3.jpg" alt="Banner 3" style="width: 100%; height: 100%; object-fit: cover;">
             </n-carousel>
             <div class="carousel-title">
-                David Z. Wang's Tech Blog
-                <div class="carousel-subtitle">桃李不言，下自成蹊 · 机器学习与数据科学实战</div>
+                David Z. Wang's Blog
             </div>
         </div>
 
