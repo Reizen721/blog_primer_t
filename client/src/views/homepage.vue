@@ -14,29 +14,29 @@
         
         <!-- Carousel Section -->
         <div class="carousel-container">
-            <n-carousel :autoplay="true" interval="3000" style="height: 300px; margin-bottom: 20px;">
-                <img src="./circulateBanner/banner1.jpg" alt="Image 1" style="width: 100%; height: 100%; object-fit: cover;">
-                <img src="./circulateBanner/banner2.jpg" alt="Image 2" style="width: 100%; height: 100%; object-fit: cover;">
-                <img src="./circulateBanner/banner3.jpg" alt="Image 3" style="width: 100%; height: 100%; object-fit: cover;">
+            <n-carousel :autoplay="true" interval="4000" style="height: 300px; margin-bottom: 20px;">
+                <img src="./circulateBanner/banner1.jpg" alt="Banner 1" style="width: 100%; height: 100%; object-fit: cover;">
+                <img src="./circulateBanner/banner2.jpg" alt="Banner 2" style="width: 100%; height: 100%; object-fit: cover;">
+                <img src="./circulateBanner/banner3.jpg" alt="Banner 3" style="width: 100%; height: 100%; object-fit: cover;">
             </n-carousel>
             <div class="carousel-title">
-                网页标题
-                <div class="carousel-subtitle">桃李不言，下自成蹊</div>
+                David Z. Wang's Tech Blog
+                <div class="carousel-subtitle">桃李不言，下自成蹊 · 机器学习与数据科学实战</div>
             </div>
         </div>
 
         <n-space class="search">
-            <n-input v-model:value="pageInfo.keyword" :style="{ width: '500px' }" placeholder="请输入关键字" />
+            <n-input v-model:value="pageInfo.keyword" :style="{ width: '500px' }" placeholder="请输入关键字搜索文章" />
             <n-button type="primary" ghost @click="loadBlogs(0)"> 搜索 </n-button>
         </n-space>
 
-        <div v-for="(blog, index) in blogListInfo" style="margin-bottom:15px;cursor: pointer;">
-            <n-card :title="blog.title" @click="toDetail(blog)">
+        <div v-for="(blog, index) in blogListInfo" :key="blog.id" style="margin-bottom:15px;cursor: pointer;">
+            <n-card :title="blog.title" @click="toDetail(blog)" hoverable>
                 {{ blog.previewContent }}
 
                 <template #footer>
                     <n-space align="center">
-                        <div>发布时间：{{ blog.create_time }}</div>
+                        <div>发布时间：{{ blog.create_time_formatted || blog.create_time }}</div>
                     </n-space>
                 </template>
             </n-card>
@@ -46,8 +46,8 @@
 
         <n-divider />
         <div class="footer">
-            <div>Copyright 2024 Devil__Zero</div>
-            <div>幻ICP备114514号-⑨</div>
+            <div>Copyright 2026 David Z. Wang (Devil__Zero) · Powered by Vue 3 & Naive UI</div>
+            <div>GitHub: <a href="https://github.com/Reizen721" target="_blank" style="color:#64676a;">Reizen721</a> · Kaggle: <a href="https://www.kaggle.com/davidzwang" target="_blank" style="color:#64676a;">@davidzwang</a></div>
         </div>
     </div>
 </template>
@@ -56,6 +56,7 @@
 import { ref, reactive, inject, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NPopselect, NDivider, NSpace, NInput, NButton, NCard, NPagination, NCarousel } from 'naive-ui'
+import { staticCategories, getStaticBlogs } from '../common/staticData'
 
 const router = useRouter()
 const route = useRoute()
@@ -69,32 +70,51 @@ const blogListInfo = ref([])
 // 查询和分页数据
 const pageInfo = reactive({
     page: 1,
-    pageSize: 3,
+    pageSize: 5,
     pageCount: 0,
     count: 0,
     keyword: "",
-    categoryId:0,
+    categoryId: 0,
 })
 
 onMounted(() => {
     loadCategorys();
-    loadBlogs()
+    loadBlogs();
 })
+
 const loadBlogs = async (page = 0) => {
     if (page != 0) {
         pageInfo.page = page;
     }
-    let res = await axios.get(`/blog/search?keyword=${pageInfo.keyword}&page=${pageInfo.page}&pageSize=${pageInfo.pageSize}&categoryId=${pageInfo.categoryId}`)
-    let temp_rows = res.data.data.rows;
+    let temp_rows = []
+    let total_count = 0
+    try {
+        let res = await axios.get(`/blog/search?keyword=${pageInfo.keyword}&page=${pageInfo.page}&pageSize=${pageInfo.pageSize}&categoryId=${pageInfo.categoryId}`, { timeout: 2000 })
+        if (res && res.data && res.data.data && res.data.data.rows) {
+            temp_rows = res.data.data.rows
+            total_count = res.data.data.count
+        } else {
+            throw new Error('Fallback')
+        }
+    } catch (e) {
+        let staticRes = getStaticBlogs(pageInfo.keyword, pageInfo.categoryId, pageInfo.page, pageInfo.pageSize)
+        temp_rows = staticRes.rows
+        total_count = staticRes.count
+    }
+
     for (let row of temp_rows) {
-        row.previewContent = row.content.replace(/<[^>]+>/g, '') + "..."
+        if (!row.previewContent) {
+            row.previewContent = row.content.replace(/<[^>]+>/g, '')
+        }
+        if (row.previewContent.length > 200) {
+            row.previewContent = row.previewContent.slice(0, 200) + "..."
+        }
         let d = new Date(row.create_time)
-        row.create_time = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+        row.create_time_formatted = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
     }
     blogListInfo.value = temp_rows;
-    pageInfo.count = res.data.data.count;
-    pageInfo.pageCount = parseInt(pageInfo.count / pageInfo.pageSize) + (pageInfo.count % pageInfo.pageSize > 0 ? 1 : 0)
-    console.log(res)
+    pageInfo.count = total_count;
+    pageInfo.pageCount = Math.max(1, parseInt(pageInfo.count / pageInfo.pageSize) + (pageInfo.count % pageInfo.pageSize > 0 ? 1 : 0))
 }
 
 const categoryName = computed(() => {
@@ -103,25 +123,33 @@ const categoryName = computed(() => {
 })
 
 const loadCategorys = async () => {
-    let res = await axios.get("/category/list")
-    categortyOptions.value = res.data.rows.map((item) => {
+    let cats = []
+    try {
+        let res = await axios.get("/category/list", { timeout: 2000 })
+        if (res && res.data && res.data.rows) {
+            cats = res.data.rows
+        } else {
+            throw new Error('Fallback')
+        }
+    } catch (e) {
+        cats = staticCategories
+    }
+    categortyOptions.value = cats.map((item) => {
         return {
             label: item.name,
             value: item.id
         }
     })
-    // 添加“查看全部文章”选项
-    categortyOptions.value.unshift({ label: "All", value: 0 })
-    console.log(categortyOptions.value)
+    categortyOptions.value.unshift({ label: "全部文章", value: 0 })
 }
 
-const searchByCategory = (categoryId)=>{
+const searchByCategory = (categoryId) => {
     pageInfo.categoryId = categoryId;
     loadBlogs()
 }
 
-const toDetail = (blog)=>{
-    router.push({path:"/detail",query:{id:blog.id}})
+const toDetail = (blog) => {
+    router.push({ path: "/detail", query: { id: blog.id } })
 }
 
 const homePage = () => {
@@ -140,11 +168,12 @@ const ownerinfo = () => {
 
 <style lang="scss" scoped>
 
-.search{
+.search {
     margin-bottom: 15px;
 }
 .container {
-    width: 1200px;
+    max-width: 1200px;
+    width: 95%;
     margin: 0 auto;
 }
 
@@ -178,14 +207,17 @@ const ownerinfo = () => {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 60px;
-    font-weight: lighter;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    font-size: 48px;
+    font-weight: 300;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+    text-align: center;
+    width: 90%;
 
     .carousel-subtitle {
-        font-size: 30px;
-        font-weight: lighter;
-        margin-top: 0px;
+        font-size: 22px;
+        font-weight: 300;
+        margin-top: 10px;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
     }
 }
 
@@ -193,5 +225,6 @@ const ownerinfo = () => {
     text-align: center;
     line-height: 25px;
     color: #64676a;
+    padding-bottom: 30px;
 }
 </style>
